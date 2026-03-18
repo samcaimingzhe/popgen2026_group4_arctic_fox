@@ -1,7 +1,6 @@
-
-
 ## Pre-processing
-> All codes are avalible in this repository
+> All codes are avalible in this repository.
+> Datasets are avalible in my path /home/popgenmsc26user21/github, you may cp them if you need.
 
 Copy the data to your path.
 ```
