@@ -101,6 +101,93 @@ We can continue to run Fst test. Please download the files to local.
 scp "popgenmsc26user00@emily.popgen.dk:~/github/AF.imputed.thin.???" ~/Desktop/AF
 wget https://raw.githubusercontent.com/samcaimingzhe/popgen2026_group4_arctic_fox/main/modified_popinfo.tsv -P ~/Desktop/AF
 ```
+Here is the Rscript for $F_st$ calculation and heatmap visualization, and if you don't want to calculate locally, we also provide the results data. 
+
+Here is the result of $F_st$ calculation:
+```
+
+```
+Here is the modified popinfo:
+```
+wget https://raw.githubusercontent.com/samcaimingzhe/popgen2026_group4_arctic_fox/main/modified_popinfo.tsv
+```
+The $F_st$ calculation:
+```
+setwd("~/Desktop/AF/")
+WC84<-function(x,pop){
+  n<-table(pop)
+  npop<-nrow(n)
+  n_avg<-mean(n)
+  N<-length(pop)
+  p<-apply(x,2,function(x,pop){tapply(x,pop,mean)/2},pop=pop)
+  p_avg<-as.vector(n%*%p/N )
+  s2<-1/(npop-1)*(apply(p,1,function(x){((x-p_avg)^2)})%*%n)/n_avg
+  h_avg<-apply(x==1,2,sum)/N
+  n_c<-1/(npop-1)*(N-sum(n^2)/N)
+  a <-n_avg/n_c*(s2-(p_avg*(1-p_avg)-(npop-1)*s2/npop-h_avg/4)/(n_avg-1))
+  b <- n_avg/(n_avg-1)*(p_avg*(1-p_avg)-(npop-1)*s2/npop-(2*n_avg-1)*h_avg/(4*n_avg))
+  c <- h_avg/2
+  F <- 1-c/(a+b+c)
+  theta <- a/(a+b+c)
+  f <- 1-c(b+c)
+  theta_w<-sum(a)/sum(a+b+c)
+  list(F=F,theta=theta,f=f,theta_w=theta_w,a=a,b=b,c=c,total=c+b+a)
+}
+
+library(snpStats)
+data <- read.plink("AF.imputed.thin")
+geno <- matrix(as.integer(data$genotypes),nrow=nrow(data$genotypes))
+geno[geno==0] <- NA
+geno <- geno - 1
+g <- geno[,complete.cases(t(geno))]
+dim(geno)
+dim(g)
+
+popinfo <- read.table("modified_popinfo.tsv", stringsAsFactors=F, header = T)
+region <- unique(popinfo$Region)
+sapply(region, function(x) popinfo$Sample[popinfo$Region == x])
+region_pairs <- t(combn(region, 2))
+
+fsts <- apply(region_pairs, 1, function(x) WC84(g[popinfo$Region %in% x,], 
+                                                popinfo$Region[popinfo$Region %in% x]))
+
+names(fsts) <- apply(region_pairs, 1, paste, collapse=".vs.")
+lapply(fsts, function(x) x$theta_w)
+fst_values <- sapply(fsts, function(x) x$theta_w)
+fst_values.df = data.frame(fst_values)
+write.csv(fst_values.df,'fst_values.csv')
+```
+The heatmap visualization:
+```
+setwd("~/Desktop/AF/")
+library(pheatmap)
+library(tidyverse)
+fst_df = read.csv('fst_values.csv')
+pairs_list = strsplit(fst_df$X, "\\.vs\\.")
+pops = sort(unique(unlist(pairs_list)))
+n = length(pops)
+fst_matrix = matrix(0, n, n, dimnames = list(pops, pops))
+for(i in seq_along(pairs_list)) {
+  pair <- pairs_list[[i]]
+  fst_matrix[pair[1], pair[2]] = fst_df$fst_values[i]
+  fst_matrix[pair[2], pair[1]] = fst_df$fst_values[i]
+}
+fst_matrix[fst_matrix<0]=0
+pheatmap(fst_matrix, 
+         display_numbers = TRUE,
+         number_format = "%.3f",
+         number_color = "black",
+         fontsize_number = 10,
+         cluster_rows = T, 
+         cluster_cols = T,
+         clustering_distance_rows = "euclidean",
+         clustering_distance_cols = "euclidean",
+         main = "Pairwise Fst between Populations",
+         color = colorRampPalette(c("white", "blue"))(100))
+```
+You may get a heatmap shows the pairwise $F_st$ between populations with cluster:
+<img width="1114" height="1012" alt="Fst" src="https://github.com/user-attachments/assets/b3f0c5b2-9d79-4af0-9cbe-f928975d79af" />
+
 
 
 
