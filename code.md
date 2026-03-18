@@ -1,3 +1,8 @@
+
+
+## Pre-processing
+> All codes are avalible in this repository
+
 Copy the data to your path.
 ```
 cp -r /course/popgenmsc26/projects/arctic_fox/data/* ./
@@ -20,7 +25,7 @@ print("Done!")
 cp AF.imputed.thin.bim AF.imputed.thin.0.bim
 python3 chr.py
 ```
-
+## PCA
 Obtain PCA results by plink. 10 PCs will be calculted though only first 2 are useful.
 ```
 plink --bfile AF.imputed.thin --freq --chr-set 24 --out AF_freqs
@@ -58,6 +63,7 @@ plot_ly(data,
 <img width="729" height="476" alt="pca" src="https://github.com/user-attachments/assets/82f2f873-3922-41ac-bc99-f4803806e810" />
 So we observed that ArcFoxSamp_128, ArcFoxSamp_144, ArcFoxSamp_152 may be the 3 most recent immigrants.
 
+## LD Pruning
 Admixture assume the SNPs are independent to each others, so we have to do LD prunning.
 ```
 # remove SNPs with missing genotypes
@@ -80,6 +86,7 @@ wc -l *.bim|sort -r
   498777 AF.frq_normal.bim
    55546 AF.clean.bim
 ```
+## Admixture \& Evaladmix processing
 Then we can run the admixture by K loop and run loop, try to run it in `screen`:
 ```
 screen -S admix
@@ -101,6 +108,7 @@ We can continue to run Fst test. Please download the files to local.
 scp "popgenmsc26user00@emily.popgen.dk:~/github/AF.imputed.thin.???" ~/Desktop/AF
 wget https://raw.githubusercontent.com/samcaimingzhe/popgen2026_group4_arctic_fox/main/modified_popinfo.tsv -P ~/Desktop/AF
 ```
+## $F_{st}$
 Here is the Rscript for $F_{st}$ calculation and heatmap visualization, and if you don't want to calculate locally, we also provide the results data. 
 
 Here is the result of $F_{st}$ calculation:
@@ -187,6 +195,8 @@ pheatmap(fst_matrix,
 ```
 You may get a heatmap shows the pairwise $F_{st}$ between populations with cluster:
 <img width="1114" height="1012" alt="Fst" src="https://github.com/user-attachments/assets/b3f0c5b2-9d79-4af0-9cbe-f928975d79af" />
+
+## Admixture \& Evaladmix analysis
 After a long time we may complete the **Admixure** (appoximately 9 hours):
 ```
 for K in {2..7}; do
@@ -218,9 +228,9 @@ cat top3_log_likelihood.log
 6	25	-2633122.089118	AF.clean_K6_run25.log
 6	67	-2633122.113995	AF.clean_K6_run67.log
 6	48	-2633457.568546	AF.clean_K6_run48.log
+7	78	-2594992.707457	AF.clean_K7_run78.log
 7	23	-2595165.099862	AF.clean_K7_run23.log
-7	26	-2595335.545909	AF.clean_K7_run26.log
-7	2	-2595454.445510	AF.clean_K7_run2.log
+7	63	-2595276.661517	AF.clean_K7_run63.log
 ```
 By selecting:
 ```
@@ -231,7 +241,7 @@ cat top1_log_likelihood.log
 4	93	-2712268.360483	AF.clean_K4_run93.log
 5	63	-2672566.870710	AF.clean_K5_run63.log
 6	25	-2633122.089118	AF.clean_K6_run25.log
-7	23	-2595165.099862	AF.clean_K7_run23.log
+7	78	-2594992.707457	AF.clean_K7_run78.log
 ```
 Copy the P file to bestAdmix for further download and plots, also run Evaladmix at the same time:
 ```
@@ -319,7 +329,7 @@ p3 = plot_ancestry_ggplot("AF.clean_K3_run68.Q", "K=3", 3)
 p4 = plot_ancestry_ggplot("AF.clean_K4_run93.Q", "K=4", 4)
 p5 = plot_ancestry_ggplot("AF.clean_K5_run63.Q", "K=5", 5)
 p6 = plot_ancestry_ggplot("AF.clean_K6_run25.Q", "K=6", 6)
-p7 = plot_ancestry_ggplot("AF.clean_K7_run23.Q", "K=7", 7)
+p7 = plot_ancestry_ggplot("AF.clean_K7_run78.Q", "K=7", 7)
 
 final_plot = (p2 / p3 / p4 / p5 / p6 / p7) + 
   plot_annotation(title = "Admixture Analysis (K=2-7)",
@@ -356,10 +366,13 @@ plot_evaladmix('K7.corres.txt', 7)
 This is the result of **Evaladmix**, we have the K=5 as the best K for our data, but from a pratical perspective, Taymr does not neccessarily to be 0, so K=4 maybe also enough? (Just a guess, we didn't ask Xiaodong yet).
 <img width="3121" height="1677" alt="evaladmix" src="https://github.com/user-attachments/assets/655a8a8f-7e6b-4399-adab-c13e5abe714b" />
 Here is the result of **Admixture**:
-[admixture_plot.pdf](https://github.com/user-attachments/files/26101582/admixture_plot.pdf)
+[admixture_plot.pdf](https://github.com/user-attachments/files/26102004/admixture_plot.pdf)
+
 
 And when we focus on 3 immigrants when K=5, these patterns are likely to tell us where did they come from, but we don't have the data to inference this, which is we would like to go further:
 <img width="895" height="340" alt="截屏2026-03-19 上午12 02 09" src="https://github.com/user-attachments/assets/815d2bc2-e3ec-49da-99fc-e85df22e1927" />
+
+### TO BE UPDATED ...
 
 
 
