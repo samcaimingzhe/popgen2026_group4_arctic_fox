@@ -187,7 +187,7 @@ pheatmap(fst_matrix,
 ```
 You may get a heatmap shows the pairwise $F_{st}$ between populations with cluster:
 <img width="1114" height="1012" alt="Fst" src="https://github.com/user-attachments/assets/b3f0c5b2-9d79-4af0-9cbe-f928975d79af" />
-After a long time we may complete the admixure (appoximately 9 hours):
+After a long time we may complete the **Admixure** (appoximately 9 hours):
 ```
 for K in {2..7}; do
     for i in {1..100}; do
@@ -199,7 +199,7 @@ done
 sort -t$'\t' -k1,1 -k3,3gr Loglikelihoods.log | awk -F'\t' 'count[$1]++ < 3' > top3_log_likelihood.log
 sort -t$'\t' -k1,1 -k3,3gr Loglikelihoods.log | awk -F'\t' 'count[$1]++ < 1' > top1_log_likelihood.log
 ```
-You may see K=2-5 are converged, but all top 1 are going to be evaladmix:
+You may see K=2-5 are converged, but all top 1 are going to be **Evaladmix**:
 ```
 cat top3_log_likelihood.log
 
@@ -233,22 +233,36 @@ cat top1_log_likelihood.log
 6	25	-2633122.089118	AF.clean_K6_run25.log
 7	23	-2595165.099862	AF.clean_K7_run23.log
 ```
+Copy the P file to bestAdmix for further download and plots, also run Evaladmix at the same time:
 ```
 mkdir -p bestAdmix
+cp /course/popgenmsc26/exercises/structure/evalAdmix ./bestAdmix
+cp /course/popgenmsc26/exercises/structure/visFuns.R ./bestAdmix
 
 while read -r line; do
+    K=$(echo "$line" | awk '{print $1}')
     file_raw=$(echo "$line" | cut -f4)
     file_prefix=${file_raw%.log}
     cp "${file_prefix}.P" ./bestAdmix/
     cp "${file_prefix}.Q" ./bestAdmix/
     echo "Copied ${file_prefix} to ./bestAdmix"
+    ./evalAdmix \
+        -plink AF.clean \
+        -fname bestAdmix/${file_prefix}.P \
+        -qname bestAdmix/${file_prefix}.Q \
+        -o ./bestAdmix/K${K}.corres.txt
+
+    echo "Finished evalAdmix for K=$K. Result saved to ./bestAdmix/K${K}.corres.txt"
 done < top1_log_likelihood.log
 ```
 By downloading the Q files to local:
 ```
 scp "popgenmsc26user00@emily.popgen.dk:~/github/bestAdmix/*.Q" ~/Desktop/AF
+scp "popgenmsc26user00@emily.popgen.dk:~/github/bestAdmix/*corres.txt" ~/Desktop/AF
+scp "popgenmsc26user00@emily.popgen.dk:~/github/bestAdmix/visFuns.R" ~/Desktop/AF
 ```
-Plot the admixture results:
+
+Plot the admixture and evaladmix results:
 ```R
 library(ggplot2)
 library(tidyr)
@@ -312,34 +326,40 @@ final_plot = (p2 / p3 / p4 / p5 / p6 / p7) +
                   theme = theme(plot.title = element_text(size = 20, hjust = 0.5)))
 
 ggsave("admixture_plot.pdf", plot = final_plot, width = 7, height = 16)
+
+
+source("visFuns.R")
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+
+popinfo <- read.table("modified_popinfo.tsv",header=T)
+
+pop = as.vector(popinfo[,1])
+plot_evaladmix = function(FILE,K){
+  r <- as.matrix(read.table(FILE))
+  plotCorRes(cor_mat = r, pop = pop, 
+             title = paste0("Correlation of residuals (K=", K,")"), 
+             max_z=0.15, min_z=-0.15,
+             cex.main=1, cex.lab=0.7, cex.legend=1,
+             rotatelabpop=90,
+             pop_labels = c(T,F),adjlab = 0.2)
+}
+
+plot_evaladmix('K2.corres.txt', 2)
+plot_evaladmix('K3.corres.txt', 3)
+plot_evaladmix('K4.corres.txt', 4)
+plot_evaladmix('K5.corres.txt', 5)
+plot_evaladmix('K6.corres.txt', 6)
+plot_evaladmix('K7.corres.txt', 7)
 ```
-Do Evaladmix:
-```
-cp /course/popgenmsc26/exercises/structure/evalAdmix ./bestAdmix
-cp /course/popgenmsc26/exercises/structure/visFuns.R ./bestAdmix
+This is the result of **Evaladmix**, we have the K=5 as the best K for our data, but from a pratical perspective, Taymr does not neccessarily to be 0, so K=4 maybe also enough? (Just a guess, we didn't ask Xiaodong yet).
+<img width="3121" height="1677" alt="evaladmix" src="https://github.com/user-attachments/assets/655a8a8f-7e6b-4399-adab-c13e5abe714b" />
+Here is the result of **Admixture**:
+[admixture_plot.pdf](https://github.com/user-attachments/files/26101582/admixture_plot.pdf)
 
-while read -r line; do
-    K=$(echo "$line" | awk '{print $1}')
-    file_raw=$(echo "$line" | cut -f4)
-    file_prefix=${file_raw%.log}
-
-    ./evalAdmix \
-        -plink AF.clean \
-        -fname bestAdmix/${file_prefix}.P \
-        -qname bestAdmix/${file_prefix}.Q \
-        -o ./bestAdmix/K${K}.corres.txt
-
-    echo "Finished evalAdmix for K=$K. Result saved to ./bestAdmix/K${K}.corres.txt"
-done < top1_log_likelihood.log
-```
-Back to your local:
-```
-scp "popgenmsc26user00@emily.popgen.dk:~/github/bestAdmix/*corres.txt" ~/Desktop/AF
-```
-
-
-
-
+And when we focus on 3 immigrants when K=5, these patterns are likely to tell us where did they come from, but we don't have the data to inference this, which is we would like to go further:
+<img width="895" height="340" alt="截屏2026-03-19 上午12 02 09" src="https://github.com/user-attachments/assets/815d2bc2-e3ec-49da-99fc-e85df22e1927" />
 
 
 
