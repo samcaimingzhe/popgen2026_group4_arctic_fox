@@ -27,10 +27,12 @@ plink --bfile AF.imputed.thin --freq --chr-set 24 --out AF_freqs
 plink --bfile AF.imputed.thin --read-freq AF_freqs.frq --pca 10 --chr-set 24 --out AF_pca
 ```
 Example code to download the pca data files to your local for plotting.
+
+NB: remember to change the user number!
 ```
 mkdir -p ~/Desktop/AF
-scp "popgenmsc26user21@emily.popgen.dk:~/github/AF_pca.*" ~/Desktop/AF
-scp "popgenmsc26user21@emily.popgen.dk:~/github/sample_popinfo.tsv" ~/Desktop/AF
+scp "popgenmsc26user00@emily.popgen.dk:~/github/AF_pca.*" ~/Desktop/AF
+scp "popgenmsc26user00@emily.popgen.dk:~/github/sample_popinfo.tsv" ~/Desktop/AF
 ```
 ```R
 setwd('~/Desktop/AF') # make a AF folder on your desktop
@@ -94,7 +96,10 @@ for K in {2..7}; do
 done
 ```
 You may use `control + A + D` to exit the screen and log out the server, because admixture requires a while to run.
-
+We can continue to run Fst test. Please download the files to local.
+```
+scp "popgenmsc26user00@emily.popgen.dk:~/github/AF.imputed.thin.???" ~/Desktop/AF
+```
 
 
 
