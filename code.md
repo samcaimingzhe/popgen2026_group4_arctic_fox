@@ -99,7 +99,10 @@ You may use `control + A + D` to exit the screen and log out the server, because
 We can continue to run Fst test. Please download the files to local.
 ```
 scp "popgenmsc26user00@emily.popgen.dk:~/github/AF.imputed.thin.???" ~/Desktop/AF
+wget https://raw.githubusercontent.com/samcaimingzhe/popgen2026_group4_arctic_fox/main/modified_popinfo.tsv -P ~/Desktop/AF
 ```
+
+
 
 
 
