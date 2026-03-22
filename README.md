@@ -374,22 +374,72 @@ And when we focus on 3 immigrants when K=5, these patterns are likely to tell us
 
 ## Genetic Diversity
 ```
-awk '$3 == "Canada"{print "0",$2}' sample_popinfo.tsv > keep_Canada.txt
-awk '$3 == "Siberia"{print "0",$2}' sample_popinfo.tsv > keep_Siberia.txt
-for r in Kangerlussuaq Qanisartuut Scoresbysund Zackenberg
+mkdir -p subpop
+wget https://raw.githubusercontent.com/samcaimingzhe/popgen2026_group4_arctic_fox/refs/heads/main/freq_popinfo.tsv
+for p in Qanisartuut Zackenberg Scoresbysund Kangerlussuaq Scoresbysund_immigrant Canada_Siberia
 do
-awk -v reg="$r" '$1 == reg {print "0",$2}' sample_popinfo.tsv > keep_${r}.txt
-done
+    echo "Processing $p..."
+    awk -v reg="$p" '$1==reg{print"0",$2}' freq_popinfo.tsv > keep_${p}.txt
 
-for p in Kangerlussuaq Qanisartuut Scoresbysund Zackenberg Siberia Canada
-do
-plink -- bfile AF.imputed.thin \
--- keep keep_${p}.txt \
--- mac 1 \
--- geno 0.5 \
--- make-bed \
--- out $p
+    plink --bfile AF.imputed.thin \
+          --keep keep_${p}.txt \
+          --mac 1 \
+          --geno 0.5 \
+          --make-bed \
+          --allow-no-sex \
+          --out subpop/$p \
+          --silent
+          
+    plink --bfile subpop/$p --freq --out subpop/$p
+    plink --bfile subpop/$p --freq --out subpop/$p
 done
 ```
+Download these `.frq` files to local:
+```
+scp "popgenmsc26user21@emily.popgen.dk:~/github/subpop/*.frq" ~/Desktop/AF
+```
+Draw the boxplot:
+```
+setwd("~/Desktop/AF/")
+library(ggplot2)
+library(dplyr)
+files <- c("Canada_Siberia.frq", "Kangerlussuaq.frq", "Qanisartuut.frq", 
+           "Scoresbysund.frq", "Scoresbysund_immigrant.frq", "Zackenberg.frq")
+
+data_het = function(FILE){
+  data = read.table(FILE, header = T)
+  data$het = 2 * data$MAF * (1 - data$MAF)
+
+  filename = basename(FILE)
+  name = sub("\\.frq$", "", filename)
+
+  result = data.frame(
+    name = name,
+    het = data$het
+  )
+  
+  return(result)
+}
+
+all_data = rbind(data_het("Canada_Siberia.frq"),
+data_het("Kangerlussuaq.frq"),
+data_het("Qanisartuut.frq"),
+data_het("Scoresbysund.frq"),
+data_het("Scoresbysund_immigrant.frq"),
+data_het("Zackenberg.frq")
+)
+
+ggplot(all_data, aes(x = name, y = het, fill = name, group = name)) +
+  coord_flip() +
+  geom_boxplot() +
+  labs(y = 'Heterozygosity', x = '') +
+  theme_light() +
+  theme(legend.position = 'none')
+```
+
+
+
+
+
 
 ### TO BE UPDATED ...
