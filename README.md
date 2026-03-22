@@ -436,6 +436,177 @@ ggplot(all_data, aes(x = name, y = het, fill = name, group = name)) +
   theme_light() +
   theme(legend.position = 'none')
 ```
+<img width="790" height="426" alt="het" src="https://github.com/user-attachments/assets/e81b66e2-ddff-45fd-bc26-60d417fdd2ec" />
+
+## $\pi$, $\theta_w$, and Tajima's D
+```
+setwd("~/Desktop/AF/")
+
+# Function for expected heterozygosity
+het <- function(x) { 2 * x * (1 - x) }
+
+# Load one population (example: Kangerlussuaq)
+load_pop <- function(prefix) {
+  frq <- read.table(paste0(prefix, ".frq"), h = TRUE)
+  bim <- read.table(paste0(prefix, ".bim"), h = FALSE)
+  
+  frq$het <- het(frq$MAF)
+  frq$pos <- bim$V4
+  frq$CHR <- frq$CHR
+  
+  return(frq)
+}
+
+# Estimate sample size
+getN <- function(x) {
+  round(median(x$NCHROBS, na.rm = TRUE) / 2)
+}
+
+# Per chromosome stats
+calc_chr_stats <- function(df) {
+  n <- getN(df)
+  S <- nrow(df)
+  
+  if (n < 2 || S == 0) return(NULL)
+  
+  a1 <- sum(1 / (1:(n - 1)))
+  a2 <- sum(1 / ((1:(n - 1))^2))
+  
+  b1 <- (n + 1) / (3 * (n - 1))
+  b2 <- 2 * (n^2 + n + 3) / (9 * n * (n - 1))
+  
+  c1 <- b1 - 1 / a1
+  c2 <- b2 - (n + 2) / (a1 * n) + a2 / (a1^2)
+  
+  e1 <- c1 / a1
+  e2 <- c2 / (a1^2 + a2)
+  
+  span <- max(df$pos) - min(df$pos)
+  
+  if (span == 0) return(NULL)
+  
+  k <- sum(df$het, na.rm = TRUE)
+  
+  pi_chr <- k / span
+  theta_chr <- S / (a1 * span)
+  tajima_chr <- (k - S / a1) / sqrt(e1 * S + e2 * S * (S - 1))
+  
+  return(data.frame(
+    CHR = unique(df$CHR),
+    span = span,
+    pi = pi_chr,
+    thetaW = theta_chr,
+    TajimaD = tajima_chr
+  ))
+}
+
+# Combine across chromosomes
+combine_stats <- function(df) {
+  # weighted mean for pi and thetaW
+  pi_total <- sum(df$pi * df$span) / sum(df$span)
+  theta_total <- sum(df$thetaW * df$span) / sum(df$span)
+  
+  # Tajima's D mean and SD
+  tajima_mean <- mean(df$TajimaD, na.rm = TRUE)
+  tajima_sd <- sd(df$TajimaD, na.rm = TRUE)
+  
+  return(list(
+    pi = pi_total,
+    thetaW = theta_total,
+    TajimaD_mean = tajima_mean,
+    TajimaD_sd = tajima_sd
+  ))
+}
+
+# Run for one population
+analyze_pop <- function(prefix) {
+  df <- load_pop(prefix)
+  
+  chr_list <- split(df, df$CHR)
+  
+  chr_stats <- do.call(rbind, lapply(chr_list, calc_chr_stats))
+  
+  combined <- combine_stats(chr_stats)
+  
+  return(list(
+    chr_stats = chr_stats,
+    combined = combined
+  ))
+}
+
+# secondary level Populations
+pop_names <- c("Kangerlussuaq", "Qanisartuut", 
+               "Scoresbysund", "Scoresbysund_immigrant",
+               "Zackenberg", "Canada_Siberia")
+
+results <- lapply(pop_names, analyze_pop)
+names(results) <- pop_names
+
+# Extract final values
+all_pi <- sapply(results, function(x) x$combined$pi)
+all_thetaW <- sapply(results, function(x) x$combined$thetaW)
+all_tajimaD <- sapply(results, function(x) x$combined$TajimaD_mean)
+
+# Show results
+all_pi
+all_thetaW
+all_tajimaD
+
+# Plot pi
+par(mar = c(7,10,4,5))
+barplot(all_pi,
+        names.arg = pop_names,
+        las = 2,
+        horiz = TRUE,
+        xlim = c(0,0.00007),
+        cex.names = 0.8,
+        xlab = expression(pi))
+
+# Plot thetaW
+par(mar = c(7,10,4,2))
+barplot(all_thetaW,
+        names.arg = pop_names,
+        las = 2,
+        horiz = TRUE,
+        xlim = c(0,2e-04),
+        cex.names = 0.8,
+        xlab = expression(theta[w]),
+        mgp = c(4, 1, 0))
+
+# Extract mean and SD
+all_tajimaD <- sapply(results, function(x) x$combined$TajimaD_mean)
+all_tajima_sd <- sapply(results, function(x) {
+  sd(x$chr_stats$TajimaD, na.rm = TRUE)
+})
+
+pop_names <- names(results)
+
+xlim_range <- c(min(all_tajimaD - all_tajima_sd, na.rm = TRUE), 0.5)
+par(mar = c(5, 10, 4, 2))
+
+bp <- barplot(all_tajimaD,
+              names.arg = pop_names,
+              las = 1,     
+              horiz = TRUE,
+              cex.names = 0.8,
+              xlab = "Tajima's D",
+              xlim = xlim_range)
+
+arrows(x0 = all_tajimaD - all_tajima_sd,
+       y0 = bp,                         
+       x1 = all_tajimaD + all_tajima_sd,
+       y1 = bp,                         
+       angle = 90,
+       code = 3,
+       length = 0.05)
+
+abline(v = 0, lty = 2, col = "red", lwd = 2)
+```
+<img width="948" height="1012" alt="pi" src="https://github.com/user-attachments/assets/a701d1af-e06c-49e8-83cc-26b995bc5503" />
+<img width="948" height="1012" alt="thetaw" src="https://github.com/user-attachments/assets/d061e616-f145-4a8a-8129-82fa0f075814" />
+<img width="946" height="878" alt="tajimaD" src="https://github.com/user-attachments/assets/8fc7c5b7-f089-4573-9df9-1bf22ee55377" />
+
+
 
 
 
