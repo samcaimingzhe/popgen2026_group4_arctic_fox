@@ -372,4 +372,24 @@ Here is the result of **Admixture**:
 And when we focus on 3 immigrants when K=5, these patterns are likely to tell us where did they come from, but we don't have the data to inference this, which is we would like to go further:
 <img width="895" height="340" alt="截屏2026-03-19 上午12 02 09" src="https://github.com/user-attachments/assets/815d2bc2-e3ec-49da-99fc-e85df22e1927" />
 
+## Genetic Diversity
+```
+awk '$3 == "Canada"{print "0",$2}' sample_popinfo.tsv > keep_Canada.txt
+awk '$3 == "Siberia"{print "0",$2}' sample_popinfo.tsv > keep_Siberia.txt
+for r in Kangerlussuaq Qanisartuut Scoresbysund Zackenberg
+do
+awk -v reg="$r" '$1 == reg {print "0",$2}' sample_popinfo.tsv > keep_${r}.txt
+done
+
+for p in Kangerlussuaq Qanisartuut Scoresbysund Zackenberg Siberia Canada
+do
+plink -- bfile AF.imputed.thin \
+-- keep keep_${p}.txt \
+-- mac 1 \
+-- geno 0.5 \
+-- make-bed \
+-- out $p
+done
+```
+
 ### TO BE UPDATED ...
