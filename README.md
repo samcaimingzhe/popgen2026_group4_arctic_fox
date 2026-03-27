@@ -1,5 +1,5 @@
 # Our Population Genetics Group Project: Arctic Fox
-Final report is here (PDF format)
+Final report is here (PDF format): 
 [Report Link](https://github.com/samcaimingzhe/popgen2026_group4_arctic_fox/blob/main/Project_report_Group4.pdf)
 ## Pre-processing
 > All codes are avalible in this repository.
